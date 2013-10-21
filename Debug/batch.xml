@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<BatchConversion>
+
+<Output>C:\Users\user\Desktop\FBX\Goblin\Out\</Output>
+
+<FbxFile>
+	<Filename>C:\Users\user\Desktop\FBX\Goblin\goblin.FBX</Filename>
+	<CollisionGeneration>None</CollisionGeneration>
+
+	<AnimClip>
+		<Name>WalkCycle</Name>
+		<Keyframes Begin="0" End="36" FPS="30" />
+	</AnimClip>
+</FbxFile>
+
+</BatchConversion>
