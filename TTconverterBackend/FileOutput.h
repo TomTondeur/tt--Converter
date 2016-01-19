@@ -64,7 +64,7 @@ private:
 	{ 
 		static void execute(const std::string& str, std::ofstream& oFile)
 		{
-			char strLen = str.size();
+			auto strLen = (char)str.size();
 			oFile.write(&strLen, 1);
 			oFile.write(str.c_str(), strLen);
 		}

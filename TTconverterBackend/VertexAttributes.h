@@ -29,13 +29,29 @@ struct BlendInfo{
 		return BlendIndices == other.BlendIndices && BlendWeights == other.BlendWeights;
 	}
 
-	BlendInfo operator=(BlendInfo&& src)
+	BlendInfo& operator=(BlendInfo&& src)
 	{
-		BlendInfo newObj;
-		newObj.BlendIndices = std::move(BlendIndices);
-		newObj.BlendWeights = std::move(BlendWeights);
-		return newObj;
+		BlendIndices = std::move(BlendIndices);
+		BlendWeights = std::move(BlendWeights);
+		return *this;
 	}
+
+	BlendInfo& operator=(const BlendInfo& src)
+	{
+		BlendIndices = BlendIndices;
+		BlendWeights = BlendWeights;
+		return *this;
+	}
+
+	BlendInfo(const BlendInfo& src)
+	{
+		*this = src;
+	}
+
+	BlendInfo()
+	{
+	}
+
 };
 
 template<typename T>
@@ -138,9 +154,9 @@ struct VertexAttribute{
 
 struct Bone{
 	std::string Name;
-	fbxsdk_2014_1::FbxAMatrix BindPose;
-	fbxsdk_2014_1::FbxNode* pFbxNode;
-	fbxsdk_2014_1::FbxCluster* pCluster;
+	fbxsdk::FbxAMatrix BindPose;
+	fbxsdk::FbxNode* pFbxNode;
+	fbxsdk::FbxCluster* pCluster;
 };
 
 struct Mesh
