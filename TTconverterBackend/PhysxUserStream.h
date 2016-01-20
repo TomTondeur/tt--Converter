@@ -17,80 +17,45 @@
 
 #pragma once
 
-#include "Nxf.h"
-#include "NxSimpleTypes.h"
-#include "NxStream.h"
+#include "PxAssert.h"
+#include "PxSimpleTypes.h"
+#include "PxIO.h"
 
 //Classes implementing the PhysX NxStream interface so we can output files through the PhysX API
 
-class UserStream : public NxStream
-	{
-	public:
-								UserStream(const char* filename, bool load);
-	virtual						~UserStream();
+class UserStream : public physx::PxInputStream, public physx::PxOutputStream
+{
+public:
+	UserStream(const char* filename, bool load);
+	virtual ~UserStream();
 
-	virtual		NxU8			readByte()								const;
-	virtual		NxU16			readWord()								const;
-	virtual		NxU32			readDword()								const;
-	virtual		float			readFloat()								const;
-	virtual		double			readDouble()							const;
-	virtual		void			readBuffer(void* buffer, NxU32 size)	const;
+	virtual physx::PxU32 write(const void* src, physx::PxU32 count) override;
+	virtual physx::PxU32 read(void* dest, physx::PxU32 count) override;
 
-	virtual		NxStream&		storeByte(NxU8 b);
-	virtual		NxStream&		storeWord(NxU16 w);
-	virtual		NxStream&		storeDword(NxU32 d);
-	virtual		NxStream&		storeFloat(NxReal f);
-	virtual		NxStream&		storeDouble(NxF64 f);
-	virtual		NxStream&		storeBuffer(const void* buffer, NxU32 size);
+	FILE* fp;
+};
 
-				FILE*			fp;
-	};
+class MemoryWriteBuffer : public physx::PxOutputStream
+{
+public:
+	MemoryWriteBuffer();
+	virtual ~MemoryWriteBuffer();
+	void clear();
 
-class MemoryWriteBuffer : public NxStream
-	{
-	public:
-								MemoryWriteBuffer();
-	virtual						~MemoryWriteBuffer();
-				void			clear();
+	virtual physx::PxU32 write(const void* src, physx::PxU32 count) override;
 
-	virtual		NxU8			readByte()								const	{ NX_ASSERT(0);	return 0;	}
-	virtual		NxU16			readWord()								const	{ NX_ASSERT(0);	return 0;	}
-	virtual		NxU32			readDword()								const	{ NX_ASSERT(0);	return 0;	}
-	virtual		float			readFloat()								const	{ NX_ASSERT(0);	return 0.0f;}
-	virtual		double			readDouble()							const	{ NX_ASSERT(0);	return 0.0;	}
-	virtual		void			readBuffer(void* buffer, NxU32 size)	const	{ NX_ASSERT(0);				}
+	physx::PxU32			currentSize;
+	physx::PxU32			maxSize;
+	physx::PxU8*			data;
+};
 
-	virtual		NxStream&		storeByte(NxU8 b);
-	virtual		NxStream&		storeWord(NxU16 w);
-	virtual		NxStream&		storeDword(NxU32 d);
-	virtual		NxStream&		storeFloat(NxReal f);
-	virtual		NxStream&		storeDouble(NxF64 f);
-	virtual		NxStream&		storeBuffer(const void* buffer, NxU32 size);
+class MemoryReadBuffer : public physx::PxInputStream
+{
+public:
+	MemoryReadBuffer(physx::PxU8* data);
+	virtual	~MemoryReadBuffer();
 
-				NxU32			currentSize;
-				NxU32			maxSize;
-				NxU8*			data;
-	};
+	virtual physx::PxU32 read(void* dest, physx::PxU32 count) override;
 
-class MemoryReadBuffer : public NxStream
-	{
-	public:
-								MemoryReadBuffer(const NxU8* data);
-	virtual						~MemoryReadBuffer();
-
-	virtual		NxU8			readByte()								const;
-	virtual		NxU16			readWord()								const;
-	virtual		NxU32			readDword()								const;
-	virtual		float			readFloat()								const;
-	virtual		double			readDouble()							const;
-	virtual		void			readBuffer(void* buffer, NxU32 size)	const;
-
-	virtual		NxStream&		storeByte(NxU8 b)							{ NX_ASSERT(0);	return *this;	}
-	virtual		NxStream&		storeWord(NxU16 w)							{ NX_ASSERT(0);	return *this;	}
-	virtual		NxStream&		storeDword(NxU32 d)							{ NX_ASSERT(0);	return *this;	}
-	virtual		NxStream&		storeFloat(NxReal f)						{ NX_ASSERT(0);	return *this;	}
-	virtual		NxStream&		storeDouble(NxF64 f)						{ NX_ASSERT(0);	return *this;	}
-	virtual		NxStream&		storeBuffer(const void* buffer, NxU32 size)	{ NX_ASSERT(0);	return *this;	}
-
-	mutable		const NxU8*		buffer;
-	};
+	physx::PxU8* buffer;
+};

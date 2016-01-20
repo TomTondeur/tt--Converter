@@ -34,12 +34,15 @@
 
 #include <fbxsdk.h>
 
-#include <NxPhysics.h>
-#include <NxCooking.h>
-#pragma comment(lib, "PhysXLoader.lib")
+#include <PxVersionNumber.h>
+#include <Px.h>
+#include <PxFoundation.h>
+#include <PxPhysics.h>
+#include <cooking/PxCooking.h>
 
 using namespace std;
 using namespace pugi;
+using namespace physx;
 
 #ifdef UNICODE
 	typedef wstring tstring;
@@ -73,7 +76,7 @@ struct Vertex{
 struct AnimClip{
 	string Name;
 	float FramesPerSecond;
-	map<double, vector<fbxsdk_2014_1::FbxAMatrix> > TransformsAtTimeStamps;
+	map<double, vector<fbxsdk::FbxAMatrix> > TransformsAtTimeStamps;
 };
 
 enum class CollisionGeneration{
@@ -345,57 +348,56 @@ void ConvertFbxFile(string inFilename, string outFilename, vector<AnimClip>& ani
 
 	std::cout << "Done.\nWriting PhysX data... ";
 	//Initialize cooker
-	NxCookingInterface* pCooker = NxGetCookingLib(NX_PHYSICS_SDK_VERSION);
-	pCooker->NxInitCooking();
+	PxCookingParams params{ PxTolerancesScale() };
+	PxCooking* pCooker = PxCreateCooking(PX_PHYSICS_VERSION, PxGetFoundation(), params);
 
-	//Build a vertex buffer for PhysX (containing only vertex positions), also copy index buffer, casting to NxU32
+	//Build a vertex buffer for PhysX (containing only vertex positions), also copy index buffer, casting to PxU32
 
 	unsigned int nrOfVerts = mesh.Positions.data.size();
 	unsigned int nrOfIndices = mesh.Positions.indices.size();
-	NxVec3* pVertices	= new NxVec3[nrOfVerts];
-	NxU32* pIndices		= new NxU32[nrOfIndices];
+	PxVec3* pVertices	= new PxVec3[nrOfVerts];
+	PxU32* pIndices		= new PxU32[nrOfIndices];
 
 	for(unsigned int i=0; i<nrOfVerts; ++i){
 		auto pos = mesh.Positions.data[i];
-		pVertices[i] = NxVec3( static_cast<NxReal>(pos.mData[0]), static_cast<NxReal>(pos.mData[1]), static_cast<NxReal>(pos.mData[2]) );
+		pVertices[i] = PxVec3( static_cast<PxReal>(pos.mData[0]), static_cast<PxReal>(pos.mData[1]), static_cast<PxReal>(pos.mData[2]) );
 	}
 
 	for(unsigned int i=0; i<nrOfIndices; ++i)
-		pIndices[i] = static_cast<NxU32>(mesh.Positions.indices[i]);
+		pIndices[i] = static_cast<PxU32>(mesh.Positions.indices[i]);
 	
-	NxTriangleMeshDesc triMeshDesc;
-	NxConvexMeshDesc convexMeshDesc;
+	PxTriangleMeshDesc triMeshDesc;
+	PxConvexMeshDesc convexMeshDesc;
 
 	//Build physical model 
 	switch(generateCollision){
 	case CollisionGeneration::Concave: 
 		//Fill desc
-		triMeshDesc.numVertices = nrOfVerts;    
-		triMeshDesc.numTriangles = nrOfIndices / 3;    
-		triMeshDesc.pointStrideBytes = sizeof(NxVec3);    
-		triMeshDesc.triangleStrideBytes = 3*sizeof(NxU32);    
-		triMeshDesc.points = pVertices;
-		triMeshDesc.triangles = pIndices;    
-		triMeshDesc.flags = 0;
+		triMeshDesc.points.count		= nrOfVerts;
+		triMeshDesc.triangles.count		= nrOfIndices / 3;
+		triMeshDesc.points.stride		= sizeof(PxVec3);
+		triMeshDesc.triangles.stride	= 3 * sizeof(PxU32);
+		triMeshDesc.points.data			= pVertices;
+		triMeshDesc.triangles.data		= pIndices;
 		//Cook
-		pCooker->NxCookTriangleMesh(triMeshDesc, UserStream((outFilename + ".ttcol").c_str(), false));
+		pCooker->cookTriangleMesh(triMeshDesc, UserStream((outFilename + ".ttcol").c_str(), false));
 		break;
 	case CollisionGeneration::Convex:
 		//Fill desc
-		convexMeshDesc.numVertices = nrOfVerts;    
-		convexMeshDesc.numTriangles = nrOfIndices / 3;    
-		convexMeshDesc.pointStrideBytes = sizeof(NxVec3);    
-		convexMeshDesc.triangleStrideBytes = 3*sizeof(NxU32);    
-		convexMeshDesc.points = pVertices;
-		convexMeshDesc.triangles = pIndices;    
-		convexMeshDesc.flags = NX_CF_COMPUTE_CONVEX;
+		convexMeshDesc.points.count		= nrOfVerts;    
+		convexMeshDesc.triangles.count	= nrOfIndices / 3;    
+		convexMeshDesc.points.stride	= sizeof(PxVec3);    
+		convexMeshDesc.triangles.stride = 3*sizeof(PxU32);    
+		convexMeshDesc.points.data		= pVertices;
+		convexMeshDesc.triangles.data	= pIndices;    
+		convexMeshDesc.flags.set(PxConvexFlag::Enum::eCOMPUTE_CONVEX);
 		//Cook
-		pCooker->NxCookConvexMesh(convexMeshDesc, UserStream( (outFilename + ".ttcol").c_str(), false));
+		pCooker->cookConvexMesh(convexMeshDesc, UserStream( (outFilename + ".ttcol").c_str(), false));
 		break;
 	};
 
 	//Stop cooking
-	pCooker->NxCloseCooking();
+	pCooker->release();
 
 	std::cout << "Done.\n\nOperation succeeded!\n\n";
 }

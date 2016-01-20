@@ -3,4 +3,5 @@ Release
 .vs
 *.sdf
 *.opensdf
+*.vcxproj.user
 *.swp
